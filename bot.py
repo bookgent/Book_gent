@@ -78,7 +78,7 @@ async def cmd_admin(message: types.Message, state: FSMContext):
         "🏗 **Admin Panel**\n\n"
         "Barcha foydalanuvchilar:\n"
         f"{user_list}\n\n"
-        "Credit qo'shish uchun `ID Amount` ko'rinishida yozing (masalan: `1234567 10`):"
+        "Kredit qo'shish uchun `ID Amount` ko'rinishida yozing (masalan: `1234567 10`):"
     )
     await message.answer(admin_text, parse_mode="Markdown")
     await state.set_state(BotStates.admin_adding_credits)
