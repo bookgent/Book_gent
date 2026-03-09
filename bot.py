@@ -18,8 +18,8 @@ from generator import save_markdown, generate_pdf
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Bot initialization
-bot = Bot(token=config.TELEGRAM_BOT_TOKEN)
+# Bot and Dispatcher initialization
+# We'll initialize Bot inside main() to avoid issues with missing env vars at import time.
 dp = Dispatcher()
 
 # States
@@ -238,8 +238,9 @@ async def background_processing(message: types.Message, status_msg: types.Messag
 
 
 async def main():
-    config.validate()
+    # config.validate()  # Already called at import time in config.py now
     print("Bot starting...")
+    bot = Bot(token=config.TELEGRAM_BOT_TOKEN)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":

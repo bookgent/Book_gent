@@ -33,3 +33,5 @@ class Config:
             raise ValueError("TELEGRAM_API_ID and ADMIN_ID must be integers")
 
 config = Config()
+# Validate immediately so we catch missing env vars at import time
+config.validate()
