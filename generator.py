@@ -32,30 +32,20 @@ class BookPDF(FPDF):
 
 def clean_text(text):
     """
-    Cleans text from HTML tags and basic markdown markers for a cleaner PDF output.
+    Strict cleaning for PDF output: removes HTML, Markdown markers, and excessive noise.
     """
     if not text:
         return ""
-    # Strip HTML tags
+    # 1. Remove HTML tags
     text = re.sub(r'<[^>]*>', '', text)
-    # Strip common markdown markers for heads/paragraphs if they persist
-    text = text.replace('**', '').replace('__', '')
+    # 2. Remove Markdown bold/italic markers
+    text = text.replace('**', '').replace('__', '').replace('*', '').replace('_', '')
+    # 3. Clean up smart quotes and special dashes that might cause issues in some viewers
+    text = text.replace('‘', "'").replace('’', "'").replace('“', '"').replace('”', '"')
+    # 4. Remove any remaining weird anchor patterns like [id]
+    text = re.sub(r'\[\d+\]', '', text)
+    
     return text.strip()
-
-def wrap_long_words(text, max_len=50):
-    """
-    Splits extremely long words (like URLs) that might break PDF layout.
-    """
-    words = text.split(' ')
-    wrapped_words = []
-    for word in words:
-        if len(word) > max_len:
-            # Chunk the long word
-            chunks = [word[i:i+max_len] for i in range(0, len(word), max_len)]
-            wrapped_words.append(' '.join(chunks))
-        else:
-            wrapped_words.append(word)
-    return ' '.join(wrapped_words)
 
 def generate_pdf(markdown_text, output_path):
     """
@@ -74,31 +64,47 @@ def generate_pdf(markdown_text, output_path):
     for line in lines:
         raw_line = line.strip()
         if not raw_line:
-            pdf.ln(5)
+            pdf.ln(4) # Reduced space for better density
             continue
             
+        # 1. Main Headings
         if raw_line.startswith('# '):
             text = clean_text(raw_line[2:])
-            pdf.set_font(pdf.main_font, 'B', 18)
-            pdf.multi_cell(epw, 12, text, align='C')
-            pdf.ln(5)
-            pdf.set_font(pdf.main_font, size=12)
+            pdf.set_font(pdf.main_font, 'B', 16)
+            pdf.multi_cell(0, 10, text, align='C', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            pdf.ln(4)
+            pdf.set_font(pdf.main_font, size=11)
+            
+        # 2. Sub Headings
         elif raw_line.startswith('## '):
             text = clean_text(raw_line[3:])
-            pdf.set_font(pdf.main_font, 'B', 15)
-            pdf.multi_cell(epw, 10, text)
+            pdf.set_font(pdf.main_font, 'B', 14)
+            pdf.multi_cell(0, 8, text, align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
             pdf.ln(2)
-            pdf.set_font(pdf.main_font, size=12)
+            pdf.set_font(pdf.main_font, size=11)
+            
         elif raw_line.startswith('### '):
             text = clean_text(raw_line[4:])
-            pdf.set_font(pdf.main_font, 'B', 13)
-            pdf.multi_cell(epw, 8, text)
+            pdf.set_font(pdf.main_font, 'B', 12)
+            pdf.multi_cell(0, 7, text, align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
             pdf.ln(1)
-            pdf.set_font(pdf.main_font, size=12)
+            pdf.set_font(pdf.main_font, size=11)
+            
+        # 3. List Items (Standardizing)
+        elif raw_line.startswith(('* ', '- ', '• ')):
+            text = "• " + clean_text(raw_line[2:])
+            pdf.multi_cell(0, 7, text, align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            
+        elif re.match(r'^\d+\.', raw_line):
+            text = clean_text(raw_line)
+            pdf.multi_cell(0, 7, text, align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
+            
+        # 4. Standard Paragraphs
         else:
-            text = clean_text(wrap_long_words(raw_line))
+            text = clean_text(raw_line)
             if text:
-                pdf.multi_cell(epw, 8, text)
+                # Use multi_cell with width 0 (fill to right margin) and explicit resets
+                pdf.multi_cell(0, 7, text, align='L', new_x=XPos.LMARGIN, new_y=YPos.NEXT)
     
     print(f"Saving PDF to {output_path}...")
     pdf.output(output_path)
