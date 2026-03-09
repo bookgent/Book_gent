@@ -6,27 +6,18 @@ import os
 class BookPDF(FPDF):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        # Try to load a Unicode font
-        font_dir = "/usr/share/fonts/truetype/clear-sans/"
-        fonts = {
-            "": "ClearSans-Regular.ttf",
-            "B": "ClearSans-Bold.ttf",
-            "I": "ClearSans-Italic.ttf",
-            "BI": "ClearSans-BoldItalic.ttf"
-        }
+        # Load bundled Unicode fonts for Uzbek support
+        font_dir = os.path.join(os.path.dirname(__file__), "fonts")
         
-        self.main_font = "Arial" # Default fallback
+        self.main_font = "DejaVu"
         
-        if os.path.exists(font_dir):
-            loaded_any = False
-            for style, filename in fonts.items():
-                path = os.path.join(font_dir, filename)
-                if os.path.exists(path):
-                    self.add_font("ClearSans", style, path)
-                    loaded_any = True
-            
-            if loaded_any:
-                self.main_font = "ClearSans"
+        try:
+            # Add Regular and Bold styles
+            self.add_font("DejaVu", "", os.path.join(font_dir, "DejaVuSans.ttf"))
+            self.add_font("DejaVu", "B", os.path.join(font_dir, "DejaVuSans-Bold.ttf"))
+        except Exception as e:
+            print(f"Warning: Could not load Unicode fonts: {e}. Falling back to Arial.")
+            self.main_font = "Arial"
 
     def header(self):
         self.set_font(self.main_font, 'B', 12)
