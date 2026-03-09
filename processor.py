@@ -2,7 +2,16 @@ import httpx
 from google import genai
 from config import config
 
-client = genai.Client(api_key=config.GEMINI_API_KEY)
+
+_client = None
+
+def get_gemini_client():
+    global _client
+    if _client is None:
+        if not config.GEMINI_API_KEY:
+            raise ValueError("GEMINI_API_KEY is not set in config.")
+        _client = genai.Client(api_key=config.GEMINI_API_KEY)
+    return _client
 
 async def generate_with_failover(prompt, model_name='gemini-flash-latest'):
     """
@@ -11,6 +20,7 @@ async def generate_with_failover(prompt, model_name='gemini-flash-latest'):
     try:
         # 1. Try Gemini
         print(f"Trying Gemini ({model_name})...")
+        client = get_gemini_client()
         response = client.models.generate_content(
             model=model_name,
             contents=prompt
