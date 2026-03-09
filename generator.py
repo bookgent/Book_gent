@@ -62,9 +62,11 @@ def generate_pdf(markdown_text, output_path):
     Improved PDF generation using fpdf2 with Unicode support.
     """
     pdf = BookPDF()
-    pdf.set_auto_page_break(auto=True, margin=15)
+    # Increase margins to prevent border overlap (L, T, R)
+    pdf.set_margins(20, 20, 20)
+    pdf.set_auto_page_break(auto=True, margin=20)
     pdf.add_page()
-    pdf.set_font(pdf.main_font, size=12)
+    pdf.set_font(pdf.main_font, size=11) # Slightly smaller font for better fit
     
     epw = pdf.epw
     

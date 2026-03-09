@@ -50,9 +50,10 @@ def get_type_keyboard():
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
     user_id = message.from_user.id
-    credits, is_new = get_user_status(user_id)
     full_name = message.from_user.full_name
-    username = f"@{message.from_user.username}" if message.from_user.username else "No username"
+    username = f"@{message.from_user.username}" if message.from_user.username else "-"
+    
+    credits, is_new = get_user_status(user_id, full_name, username)
 
     if is_new:
         admin_notification = (
@@ -85,11 +86,22 @@ async def cmd_admin(message: types.Message, state: FSMContext):
         return # Silent fail for non-admins
 
     users = get_all_users()
-    user_list = "\n".join([f"👤 ID: `{u[0]}` | Credits: {u[1]} | 📚: {u[2]} | 📝: {u[3]}" for u in users])
+    user_rows = []
+    for u in users:
+        uid, creds, books, cheats, name, uname, date = u
+        formatted_date = date.split()[0] if date else "-"
+        status = "🌟 ADMIN" if uid == config.ADMIN_ID else "👤 User"
+        user_rows.append(
+            f"{status} | `{uid}` | {creds}cr\n"
+            f"└ {name} ({uname}) | 📅 {formatted_date}\n"
+            f"└ 📚: {books} | 📝: {cheats}"
+        )
+    
+    user_list = "\n\n".join(user_rows)
     
     admin_text = (
         "🏗 **Admin Panel**\n\n"
-        "Barcha foydalanuvchilar (ID | Kredit | Kitob | CheatSheet):\n"
+        "Foydalanuvchilar Ro'yxati:\n\n"
         f"{user_list}\n\n"
         "Kredit qo'shish uchun `ID Amount` ko'rinishida yozing (masalan: `1234567 10`):"
     )

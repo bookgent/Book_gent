@@ -27,9 +27,15 @@ def init_db():
             cursor.execute("ALTER TABLE users ADD COLUMN books_count INTEGER DEFAULT 0")
         if 'cheatsheets_count' not in columns:
             cursor.execute("ALTER TABLE users ADD COLUMN cheatsheets_count INTEGER DEFAULT 0")
+        if 'full_name' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN full_name TEXT")
+        if 'username' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN username TEXT")
+        if 'created_at' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN created_at TIMESTAMP")
         conn.commit()
 
-def get_user_status(user_id):
+def get_user_status(user_id, full_name=None, username=None):
     """Returns (credits, is_new)"""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
@@ -37,7 +43,10 @@ def get_user_status(user_id):
         row = cursor.fetchone()
         
         if not row:
-            cursor.execute("INSERT INTO users (user_id, credits) VALUES (?, 3.0)", (user_id,))
+            cursor.execute(
+                "INSERT INTO users (user_id, credits, full_name, username, created_at) VALUES (?, 3.0, ?, ?, CURRENT_TIMESTAMP)", 
+                (user_id, full_name, username)
+            )
             conn.commit()
             return 3.0, True
             
@@ -71,10 +80,10 @@ def increment_cheatsheet_count(user_id):
         conn.commit()
 
 def get_all_users():
-    """Admin function: returns list of (user_id, credits, books, cheatsheets)"""
+    """Admin function: returns list of (user_id, credits, books, cheatsheets, full_name, username, created_at)"""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id, credits, books_count, cheatsheets_count FROM users")
+        cursor.execute("SELECT user_id, credits, books_count, cheatsheets_count, full_name, username, created_at FROM users")
         return cursor.fetchall()
 
 def add_credits(user_id, amount):
