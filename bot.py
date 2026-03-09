@@ -9,7 +9,7 @@ from aiogram.fsm.state import State, StatesGroup
 from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, FSInputFile
 
 from config import config
-from database import get_credits, deduct_credits, has_enough_credits, get_all_users, add_credits, PLAN_COSTS
+from database import get_credits, deduct_credits, has_enough_credits, get_all_users, add_credits, PLAN_COSTS, get_user_status, increment_book_count, increment_cheatsheet_count
 from scraper import scrape_channel
 from processor import process_content, generate_with_failover
 from generator import save_markdown, generate_pdf
@@ -50,8 +50,21 @@ def get_type_keyboard():
 async def cmd_start(message: types.Message, state: FSMContext):
     await state.clear()
     user_id = message.from_user.id
-    credits = get_credits(user_id)
+    credits, is_new = get_user_status(user_id)
     full_name = message.from_user.full_name
+    username = f"@{message.from_user.username}" if message.from_user.username else "No username"
+
+    if is_new:
+        admin_notification = (
+            "🆕 **Yangi foydalanuvchi!**\n\n"
+            f"👤 Ism: {full_name}\n"
+            f"🆔 ID: `{user_id}`\n"
+            f"🔗 Username: {username}"
+        )
+        try:
+            await bot.send_message(config.ADMIN_ID, admin_notification, parse_mode="Markdown")
+        except Exception as e:
+            logger.error(f"Failed to notify admin about new user: {e}")
     
     welcome_text = (
         f"👋 Xush kelibsiz, {full_name}! Men Telegram kanal postlaridan kitob yoki qo'llanma Darslik yozuvchi botman.\n\n"
@@ -72,11 +85,11 @@ async def cmd_admin(message: types.Message, state: FSMContext):
         return # Silent fail for non-admins
 
     users = get_all_users()
-    user_list = "\n".join([f"👤 ID: `{u[0]}` | Credits: {u[1]}" for u in users])
+    user_list = "\n".join([f"👤 ID: `{u[0]}` | Credits: {u[1]} | 📚: {u[2]} | 📝: {u[3]}" for u in users])
     
     admin_text = (
         "🏗 **Admin Panel**\n\n"
-        "Barcha foydalanuvchilar:\n"
+        "Barcha foydalanuvchilar (ID | Kredit | Kitob | CheatSheet):\n"
         f"{user_list}\n\n"
         "Kredit qo'shish uchun `ID Amount` ko'rinishida yozing (masalan: `1234567 10`):"
     )
@@ -220,8 +233,13 @@ async def background_processing(message: types.Message, status_msg: types.Messag
         await message.reply_document(FSInputFile(pdf_file), caption=f"Sizning {type_name} ready! (Plan: {plan})")
         await message.reply_document(FSInputFile(md_file), caption=f"Sizning {type_name} ready! (Markdown)")
 
-        # Deduct credits
+        # Deduct credits and increment counter
         deduct_credits(user_id, cost)
+        if mode == "book":
+            increment_book_count(user_id)
+        else:
+            increment_cheatsheet_count(user_id)
+            
         new_balance = get_credits(user_id)
         await message.answer(f"✅ {cost} credit yechib olindi. Qolgan balans: **{new_balance}**", parse_mode="Markdown")
         

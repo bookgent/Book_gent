@@ -18,14 +18,19 @@ def init_db():
                 last_interaction TIMESTAMP DEFAULT CURRENT_TIMESTAMP
             )
         ''')
-        # Check if credits column exists (for backward compatibility)
+        # Schema migrations
         cursor.execute("PRAGMA table_info(users)")
         columns = [column[1] for column in cursor.fetchall()]
         if 'credits' not in columns:
             cursor.execute("ALTER TABLE users ADD COLUMN credits REAL DEFAULT 3")
+        if 'books_count' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN books_count INTEGER DEFAULT 0")
+        if 'cheatsheets_count' not in columns:
+            cursor.execute("ALTER TABLE users ADD COLUMN cheatsheets_count INTEGER DEFAULT 0")
         conn.commit()
 
-def get_credits(user_id):
+def get_user_status(user_id):
+    """Returns (credits, is_new)"""
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT credits FROM users WHERE user_id = ?", (user_id,))
@@ -34,9 +39,13 @@ def get_credits(user_id):
         if not row:
             cursor.execute("INSERT INTO users (user_id, credits) VALUES (?, 3.0)", (user_id,))
             conn.commit()
-            return 3.0
+            return 3.0, True
             
-        return row[0]
+        return row[0], False
+
+def get_credits(user_id):
+    credits, _ = get_user_status(user_id)
+    return credits
 
 def deduct_credits(user_id, amount):
     with sqlite3.connect(DB_NAME) as conn:
@@ -49,11 +58,23 @@ def has_enough_credits(user_id, plan="Starter"):
     credits = get_credits(user_id)
     return credits >= cost
 
-def get_all_users():
-    """Admin function: returns list of (user_id, credits)"""
+def increment_book_count(user_id):
     with sqlite3.connect(DB_NAME) as conn:
         cursor = conn.cursor()
-        cursor.execute("SELECT user_id, credits FROM users")
+        cursor.execute("UPDATE users SET books_count = books_count + 1 WHERE user_id = ?", (user_id,))
+        conn.commit()
+
+def increment_cheatsheet_count(user_id):
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("UPDATE users SET cheatsheets_count = cheatsheets_count + 1 WHERE user_id = ?", (user_id,))
+        conn.commit()
+
+def get_all_users():
+    """Admin function: returns list of (user_id, credits, books, cheatsheets)"""
+    with sqlite3.connect(DB_NAME) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT user_id, credits, books_count, cheatsheets_count FROM users")
         return cursor.fetchall()
 
 def add_credits(user_id, amount):
