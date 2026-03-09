@@ -1,5 +1,6 @@
 import asyncio
 from telethon import TelegramClient
+from telethon.sessions import StringSession
 from config import config
 
 async def scrape_channel(channel_link, limit=None):
@@ -9,10 +10,14 @@ async def scrape_channel(channel_link, limit=None):
     # Clean up the channel link in case of typos
     channel_link = channel_link.strip().replace("https://https://", "https://")
     
-    client = TelegramClient('session_name', config.TELEGRAM_API_ID, config.TELEGRAM_API_HASH)
+    if config.TELEGRAM_SESSION_STRING:
+        client = TelegramClient(StringSession(config.TELEGRAM_SESSION_STRING), config.TELEGRAM_API_ID, config.TELEGRAM_API_HASH)
+    else:
+        client = TelegramClient('session_name', config.TELEGRAM_API_ID, config.TELEGRAM_API_HASH)
     
     async with client:
         # start() handles the login flow interactively if needed
+        # If using StringSession, it will just use the provided string.
         await client.start(phone=config.TELEGRAM_PHONE)
 
         channel = await client.get_entity(channel_link)

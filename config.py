@@ -11,6 +11,7 @@ class Config:
     TELEGRAM_BOT_TOKEN = os.getenv("TELEGRAM_BOT_TOKEN")
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
     ADMIN_ID = os.getenv("ADMIN_ID")
+    TELEGRAM_SESSION_STRING = os.getenv("TELEGRAM_SESSION_STRING")
 
     @classmethod
     def validate(cls):
@@ -22,6 +23,10 @@ class Config:
         if not cls.TELEGRAM_BOT_TOKEN: missing.append("TELEGRAM_BOT_TOKEN")
         if not cls.OPENROUTER_API_KEY: missing.append("OPENROUTER_API_KEY")
         if not cls.ADMIN_ID: missing.append("ADMIN_ID")
+        
+        # We need either PHONE (for local login) or SESSION_STRING (for Railway)
+        if not cls.TELEGRAM_PHONE and not cls.TELEGRAM_SESSION_STRING:
+            missing.append("TELEGRAM_PHONE or TELEGRAM_SESSION_STRING")
         
         if missing:
             raise ValueError(f"Missing environment variables: {', '.join(missing)}")
