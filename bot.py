@@ -19,7 +19,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Bot and Dispatcher initialization
-# We'll initialize Bot inside main() to avoid issues with missing env vars at import time.
+bot = Bot(token=config.TELEGRAM_BOT_TOKEN)
 dp = Dispatcher()
 
 # States
@@ -124,6 +124,14 @@ async def process_admin_add(message: types.Message, state: FSMContext):
         
         add_credits(target_id, amount)
         await message.answer(f"✅ User `{target_id}` ga {amount} credit qo'shildi.", parse_mode="Markdown")
+        
+        # Notify the user
+        try:
+            notification_text = f"🎁 Admin @ataxanov7z has increased your limit to {amount} credits!"
+            await bot.send_message(target_id, notification_text)
+        except Exception as e:
+            logger.error(f"Failed to notify user {target_id} about credit increase: {e}")
+            
     except ValueError:
         await message.answer("❌ Xato format. Iltimos `ID Amount` ko'rinishida yozing.")
     finally:
@@ -270,7 +278,6 @@ async def background_processing(message: types.Message, status_msg: types.Messag
 async def main():
     # config.validate()  # Already called at import time in config.py now
     print("Bot starting...")
-    bot = Bot(token=config.TELEGRAM_BOT_TOKEN)
     await dp.start_polling(bot)
 
 if __name__ == "__main__":
