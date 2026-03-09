@@ -12,9 +12,11 @@ class BookPDF(FPDF):
         self.main_font = "DejaVu"
         
         try:
-            # Add Regular and Bold styles
+            # Add all four styles for full support
             self.add_font("DejaVu", "", os.path.join(font_dir, "DejaVuSans.ttf"))
             self.add_font("DejaVu", "B", os.path.join(font_dir, "DejaVuSans-Bold.ttf"))
+            self.add_font("DejaVu", "I", os.path.join(font_dir, "DejaVuSans-Oblique.ttf"))
+            self.add_font("DejaVu", "BI", os.path.join(font_dir, "DejaVuSans-BoldOblique.ttf"))
         except Exception as e:
             print(f"Warning: Could not load Unicode fonts: {e}. Falling back to Arial.")
             self.main_font = "Arial"
