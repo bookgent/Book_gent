@@ -30,6 +30,18 @@ class BookPDF(FPDF):
         self.set_font(self.main_font, 'I', 8)
         self.cell(0, 10, f'Page {self.page_no()}', 0, new_x=XPos.RIGHT, new_y=YPos.TOP, align='C')
 
+def clean_text(text):
+    """
+    Cleans text from HTML tags and basic markdown markers for a cleaner PDF output.
+    """
+    if not text:
+        return ""
+    # Strip HTML tags
+    text = re.sub(r'<[^>]*>', '', text)
+    # Strip common markdown markers for heads/paragraphs if they persist
+    text = text.replace('**', '').replace('__', '')
+    return text.strip()
+
 def wrap_long_words(text, max_len=50):
     """
     Splits extremely long words (like URLs) that might break PDF layout.
@@ -58,28 +70,33 @@ def generate_pdf(markdown_text, output_path):
     
     lines = markdown_text.split('\n')
     for line in lines:
-        line = wrap_long_words(line.strip())
-        if not line:
+        raw_line = line.strip()
+        if not raw_line:
             pdf.ln(5)
             continue
             
-        if line.startswith('# '):
+        if raw_line.startswith('# '):
+            text = clean_text(raw_line[2:])
             pdf.set_font(pdf.main_font, 'B', 18)
-            pdf.multi_cell(epw, 12, line[2:], align='C')
+            pdf.multi_cell(epw, 12, text, align='C')
             pdf.ln(5)
             pdf.set_font(pdf.main_font, size=12)
-        elif line.startswith('## '):
+        elif raw_line.startswith('## '):
+            text = clean_text(raw_line[3:])
             pdf.set_font(pdf.main_font, 'B', 15)
-            pdf.multi_cell(epw, 10, line[3:])
+            pdf.multi_cell(epw, 10, text)
             pdf.ln(2)
             pdf.set_font(pdf.main_font, size=12)
-        elif line.startswith('### '):
+        elif raw_line.startswith('### '):
+            text = clean_text(raw_line[4:])
             pdf.set_font(pdf.main_font, 'B', 13)
-            pdf.multi_cell(epw, 8, line[4:])
+            pdf.multi_cell(epw, 8, text)
             pdf.ln(1)
             pdf.set_font(pdf.main_font, size=12)
         else:
-            pdf.multi_cell(epw, 8, line)
+            text = clean_text(wrap_long_words(raw_line))
+            if text:
+                pdf.multi_cell(epw, 8, text)
     
     print(f"Saving PDF to {output_path}...")
     pdf.output(output_path)
