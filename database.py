@@ -1,7 +1,12 @@
 import sqlite3
+import os
 from datetime import datetime
 
-DB_NAME = "users.db"
+DB_NAME = os.getenv("DATABASE_URL", "users.db")
+# Ensure directory exists if it's a custom path
+db_dir = os.path.dirname(DB_NAME)
+if db_dir and not os.path.exists(db_dir):
+    os.makedirs(db_dir, exist_ok=True)
 PLAN_COSTS = {
     "Starter": 1.0,
     "Pro": 2.0,
