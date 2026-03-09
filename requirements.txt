@@ -1,0 +1,6 @@
+python-dotenv
+telethon
+google-genai
+fpdf2
+aiogram
+httpx
