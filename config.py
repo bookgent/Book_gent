@@ -24,9 +24,9 @@ class Config:
         if not cls.OPENROUTER_API_KEY: missing.append("OPENROUTER_API_KEY")
         if not cls.ADMIN_ID: missing.append("ADMIN_ID")
         
-        # We need either PHONE (for local login) or SESSION_STRING (for Railway)
-        if not cls.TELEGRAM_PHONE and not cls.TELEGRAM_SESSION_STRING:
-            missing.append("TELEGRAM_PHONE or TELEGRAM_SESSION_STRING")
+        # Specifically check for SESSION_STRING for server/Railway deployments
+        if not cls.TELEGRAM_SESSION_STRING:
+            print("⚠️ WARNING: TELEGRAM_SESSION_STRING is missing. For Railway or server deployments, you MUST provide it to avoid EOFError during login.")
         
         if missing:
             raise ValueError(f"Missing environment variables: {', '.join(missing)}")
